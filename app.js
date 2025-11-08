@@ -22,11 +22,11 @@ let debounceTimer = null;
 let clientsPerPage = 20; 
 let currentClientPage = 1; 
 
-// Referências do DOM
-const appWrapperEl = document.getElementById('app-wrapper'); 
-const appEl = document.getElementById('app'); 
-const toastEl = document.getElementById('toast-container');
-const modalEl = document.getElementById('modal-container');
+// Referências do DOM (serão inicializadas dentro de main, após DOMContentLoaded)
+let appWrapperEl;
+let appEl;
+let toastEl;
+let modalEl;
 
 // Expõe variáveis de Paginação para o UI.js
 window.clientsPerPage = clientsPerPage;
@@ -37,6 +37,17 @@ window.currentClientPage = currentClientPage;
  */
 async function main() {
     try {
+        // Inicializa referências do DOM aqui (após DOMContentLoaded)
+        appWrapperEl = document.getElementById('app-wrapper'); 
+        appEl = document.getElementById('app'); 
+        toastEl = document.getElementById('toast-container');
+        modalEl = document.getElementById('modal-container');
+
+        // Verificação de segurança: elementos obrigatórios
+        if (!appWrapperEl || !appEl || !toastEl || !modalEl) {
+            throw new Error('Elementos DOM obrigatórios não encontrados. Verifique se #app-wrapper, #app, #toast-container e #modal-container existem no HTML.');
+        }
+
         // Inicializa os módulos
         initUI(appWrapperEl, appEl, toastEl, modalEl);
         
@@ -50,15 +61,20 @@ async function main() {
         console.error("ERRO FATAL AO INICIAR O APP:", err);
         
         // Fallback visual para erro
-        appEl.innerHTML = `
-            <div style="padding: 2rem; text-align: center;">
-                <h2 style="color: var(--danger-color);">Erro ao carregar o sistema</h2>
-                <p>${err.message}</p>
-                <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">
-                    Tentar Novamente
-                </button>
-            </div>
-        `;
+        if (appEl) {
+            appEl.innerHTML = `
+                <div style="padding: 2rem; text-align: center;">
+                    <h2 style="color: var(--danger-color);">Erro ao carregar o sistema</h2>
+                    <p>${err.message}</p>
+                    <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">
+                        Tentar Novamente
+                    </button>
+                </div>
+            `;
+        } else {
+            // Caso appEl também não exista (situação rara), log no console apenas.
+            console.error('Elemento #app não existe no DOM para exibir fallback.');
+        }
     }
 }
 
@@ -83,6 +99,10 @@ async function reloadDataAndRender(fullRender = false) {
  * Anexa todos os listeners de eventos
  */
 function attachListeners() {
+    if (!appWrapperEl || !modalEl) {
+        console.warn('attachListeners: elementos do DOM ausentes, listeners não anexados.');
+        return;
+    }
     
     // Listener principal para cliques no app
     appWrapperEl.addEventListener('click', async (e) => { 
